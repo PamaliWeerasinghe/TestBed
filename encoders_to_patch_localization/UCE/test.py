@@ -13,7 +13,7 @@ model = LightweightAutoencoder().to(device)
 model.eval()
 
 project_root = Path(__file__).resolve().parents[2]
-heatmap_dir = project_root / "heatmaps" / "patched"
+heatmap_dir = project_root / "heatmaps" / "patched" / "d9fda4e4-0b76e3f0"
 
 if not heatmap_dir.exists():
     raise FileNotFoundError(f"Heatmap folder not found: {heatmap_dir}")
@@ -37,7 +37,7 @@ with torch.no_grad():
 
         # Post-Processing: Threshold the error to tightly bound the patch
         # Any error above 3x the average error is treated as the patch location
-        threshold = error_hm.mean() + 3 * error_hm.std()
+        threshold = error_hm.mean() + 1.5 * error_hm.std()
         localization_mask = (error_hm > threshold).astype(np.uint8) * 255
 
         # Plotting the results
