@@ -38,10 +38,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-YOLO_V5_ROOT = Path("/Users/sakith/UCSC-Prac/Research/learning_tasks/yolov5_adversarial")
+YOLO_V5_ROOT = Path("C:\\Research\\repos\\yolov5_adversarial")
 sys.path.insert(0, str(YOLO_V5_ROOT))
 
-YOLO_CAM_ROOT = Path("/Users/sakith/UCSC-Prac/Research/learning_tasks/YOLO-26-CAM")
+YOLO_CAM_ROOT = Path("C:\\Research\\repos\\YOLO-26-CAM")
 if YOLO_CAM_ROOT.exists() and str(YOLO_CAM_ROOT) not in sys.path:
     sys.path.insert(0, str(YOLO_CAM_ROOT))
 
@@ -466,7 +466,7 @@ def parse_opt():
     parser.add_argument("--conf-thres", type=float, default=0.25, help="confidence threshold")
     parser.add_argument("--iou-thres", type=float, default=0.45, help="NMS IoU threshold")
     parser.add_argument("--max-det", type=int, default=1000, help="maximum detections per image")
-    parser.add_argument("--device", default="", help="cuda device, i.e. 0 or 0,1,2,3 or cpu")
+    parser.add_argument("--device", default="cpu", help="cuda device, i.e. 0 or 0,1,2,3 or cpu")
     parser.add_argument("--view-img", action="store_true", help="show results")
     parser.add_argument("--save-txt", action="store_true", help="save results to *.txt")
     parser.add_argument(

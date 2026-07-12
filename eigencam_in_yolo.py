@@ -16,7 +16,7 @@ from yolo_cam.utils.image import show_cam_on_image
 model = YOLO("yolo11n.pt").cuda()  # Load the YOLO model and move it to GPU
 
 #define the target layers for CAM
-target_layers = [model.model.model[-4]]
+target_layers = [model.model.model[-2]]
 
 #initialize the EigenCAM object
 cam = EigenCAM(model, target_layers, task="od")
