@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class HeatmapDataset(Dataset):
-    def __init__(self, folder_path, img_size=(128, 128)):
+    def __init__(self, folder_path, img_size=None):
         self.folder_path = folder_path
         self.img_paths = []
         self.img_size = img_size
@@ -27,12 +27,12 @@ class HeatmapDataset(Dataset):
                     self.img_paths.append(str(image_path))
         else:
             for file_path in root.iterdir():
-                if file_path.is_file():
+                if file_path.is_file() and file_path.name.endswith("_cam_rgb.jpg"):
                     self.img_paths.append(str(file_path))
 
         if not self.img_paths:
             raise FileNotFoundError(
-                f"No heatmap images found under {folder_path}. Expected subfolders containing '<name>_cam_rgb.jpg'."
+                f"No RGB heatmap images found under {folder_path}. Expected files ending with '_cam_rgb.jpg'."
             )
 
     def __len__(self):
@@ -40,11 +40,13 @@ class HeatmapDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.img_paths[idx]
-        # EigenCAM heatmaps are usually saved as grayscale or RGB. Read as grayscale.
         heatmap = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        heatmap = cv2.resize(heatmap, self.img_size)
+        if heatmap is None:
+            raise ValueError(f"Failed to read image: {img_path}")
 
-        # Normalize to [0, 1] and add channel dimension
+        if self.img_size is not None:
+            heatmap = cv2.resize(heatmap, self.img_size)
+
         heatmap = heatmap.astype(np.float32) / 255.0
         heatmap = np.expand_dims(heatmap, axis=0)
 

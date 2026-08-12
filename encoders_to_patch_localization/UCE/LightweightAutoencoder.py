@@ -1,4 +1,6 @@
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class LightweightAutoencoder(nn.Module):
     def __init__(self):
@@ -34,4 +36,7 @@ class LightweightAutoencoder(nn.Module):
         )
 
     def forward(self, x):
-        return self.decoder(self.encoder(x))
+        original_size = x.shape[-2:]
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return F.interpolate(decoded, size=original_size, mode='bilinear', align_corners=True)

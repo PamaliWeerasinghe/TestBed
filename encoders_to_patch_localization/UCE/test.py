@@ -9,18 +9,30 @@ from prepare_and_preprocess_data import HeatmapDataset
 from LightweightAutoencoder import LightweightAutoencoder
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+weights_path = Path(__file__).resolve().parent / "weights" / "lightweight_autoencoder.pth"
+
+if not weights_path.exists():
+    raise FileNotFoundError(f"Trained weights not found: {weights_path}")
+
 model = LightweightAutoencoder().to(device)
+model.load_state_dict(torch.load(weights_path, map_location=device))
 model.eval()
 
 project_root = Path(__file__).resolve().parents[2]
-heatmap_dir = project_root / "heatmaps" / "patched" / "d9fda4e4-0b76e3f0"
+heatmap_dir = project_root / "heatmaps" / "patched" / "caf92153-cfcdf92a-copy"
 
 if not heatmap_dir.exists():
     raise FileNotFoundError(f"Heatmap folder not found: {heatmap_dir}")
 
-# Load one heatmap sample
+# Load only the RGB heatmap samples and ignore overlay / detection / original patched images
 patched_dataset = HeatmapDataset(folder_path=str(heatmap_dir))
+patched_dataset.img_paths = [
+    path for path in patched_dataset.img_paths if path.lower().endswith("_cam_rgb.jpg")
+]
+
 test_loader = DataLoader(patched_dataset, batch_size=1, shuffle=False)
+print(test_loader.dataset.img_paths)
 
 with torch.no_grad():
     for i, test_input in enumerate(test_loader):

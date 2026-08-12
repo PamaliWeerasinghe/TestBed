@@ -13,6 +13,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 project_root = Path(__file__).resolve().parents[2]
 heatmap_dir = project_root / "heatmaps" / "clean"
+weights_dir = Path(__file__).resolve().parent / "weights"
+weights_dir.mkdir(parents=True, exist_ok=True)
 
 if not heatmap_dir.exists():
     raise FileNotFoundError(f"Heatmap folder not found: {heatmap_dir}")
@@ -25,7 +27,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training Loop
-epochs = 20  # Usually converges quickly for heatmaps
+epochs = 50  # Usually converges quickly for heatmaps
 model.train()
 for epoch in range(epochs):
     total_loss = 0
@@ -38,3 +40,7 @@ for epoch in range(epochs):
         optimizer.step()
         total_loss += loss.item()
     print(f"Epoch [{epoch+1}/{epochs}], Loss: {total_loss/len(train_loader):.4f}")
+
+weights_path = weights_dir / "lightweight_autoencoder.pth"
+torch.save(model.state_dict(), weights_path)
+print(f"Model weights saved to: {weights_path}")
