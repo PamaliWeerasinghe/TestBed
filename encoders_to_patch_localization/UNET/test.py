@@ -9,12 +9,13 @@ from albumentations.pytorch import ToTensorV2
 from model import UNet
 from dataset import BDD100kDataset
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 TEST_IMG_DIR = "C:\\Research\\repos\\TestBed\\data\\test_images"
 TEST_MASK_DIR = "C:\\Research\\repos\\TestBed\\data\\test_masks"
 OUTPUT_DIR = "C:\\Research\\repos\\TestBed\\data\\saved_predictions"
+WEIGHTS_DIR = "C:\\Research\\repos\\TestBed\\encoders_to_patch_localization\\UNET\\weights"
 
 def save_predictions_as_imgs(loader, model, folder="C:\\Research\\repos\\TestBed\\data\\saved_predictions", device="cuda"):
     if not os.path.exists(folder):
@@ -44,20 +45,34 @@ def save_predictions_as_imgs(loader, model, folder="C:\\Research\\repos\\TestBed
     ], dtype=np.uint8)
         
     model.eval()
-    for idx, (x, y) in enumerate(loader):
+    for idx, batch in enumerate(loader):
+        # Dataset may return (image, mask) or (image, mask, filename)
+        if len(batch) == 3:
+            x, y, names = batch
+        else:
+            x, y = batch
+            names = [f"{idx}_{i}.jpg" for i in range(x.shape[0])]
+
         x = x.to(device=device)
         with torch.no_grad():
-            # Get raw logits from the model
             logits = model(x)
-            
-            # Find the index (class ID) with the highest probability across the 19 channels
             preds = torch.argmax(logits, dim=1) 
-            
+
         preds = preds.cpu().numpy()
+
         for i, pred_mask in enumerate(preds):
-            # The saved image will look very dark because values only go from 0 to 18
-            img = Image.fromarray(pred_mask.astype(np.uint8))
-            img.save(f"{folder}/pred_{idx}_{i}.png")
+            # Map the integer class IDs to the RGB colors
+            # Any class outside 0-18 (like 255) will cause an error,
+            # so we clip it to a safe index just for visualization
+            safe_mask = np.clip(pred_mask, 0, 18)
+            rgb_mask = color_map[safe_mask]
+
+            img = Image.fromarray(rgb_mask)
+            # Use original filename when available, otherwise fall back to index-based name
+            orig_name = names[i]
+            base, _ = os.path.splitext(orig_name)
+            out_name = f"pred_{base}.png"
+            img.save(os.path.join(folder, out_name))
             
     model.train()
     print(f"Predictions saved to {folder}")
@@ -70,7 +85,7 @@ def main():
     ], is_check_shapes=False)
 
     model = UNet(in_channels=3, out_channels=19).to(DEVICE)
-    model.load_state_dict(torch.load("unet_bdd100k_epoch_10.pth")) # Load correct weights
+    model.load_state_dict(torch.load(WEIGHTS_DIR + "\\unet_bdd100k_epoch_10.pth")) # Load correct weights
     
     test_dataset = BDD100kDataset(image_dir=TEST_IMG_DIR, mask_dir=TEST_MASK_DIR, transform=transform)
     test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)

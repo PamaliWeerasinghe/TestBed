@@ -11,7 +11,7 @@ from model import UNet
 from dataset import BDD100kDataset
 
 LEARNING_RATE = 1e-4
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 BATCH_SIZE = 8
 NUM_EPOCHS = 10
 IMAGE_HEIGHT = 256
@@ -23,7 +23,13 @@ WEIGHTS_DIR = "C:\\Research\\repos\\TestBed\\encoders_to_patch_localization\\UNE
 def train_fn(loader, model, optimizer, loss_fn):
     loop = tqdm(loader)
     
-    for batch_idx, (data, targets) in enumerate(loop):
+    for batch_idx, batch in enumerate(loop):
+        # Dataset may return (image, mask) or (image, mask, filename)
+        if len(batch) == 3:
+            data, targets, _ = batch
+        else:
+            data, targets = batch
+
         data = data.to(device=DEVICE)
         # Target shape must be (batch_size, H, W) and type Long for CrossEntropy
         targets = targets.long().to(device=DEVICE) 
@@ -38,10 +44,12 @@ def train_fn(loader, model, optimizer, loss_fn):
         loop.set_postfix(loss=loss.item())
 
 def main():
-    print(f"Using device: {DEVICE}")
+    # Albumentations is smart enough to know that A.Normalize should only be 
+    # applied to the image, not the mask. Your class IDs (0–18, 255) inside the mask remain untouched.
     transform = A.Compose([
         A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
         A.Normalize(mean=[0.0, 0.0, 0.0], std=[1.0, 1.0, 1.0], max_pixel_value=255.0),
+        # This converts the image and mask arrays into PyTorch Tensors.
         ToTensorV2(),
     ], is_check_shapes=False)
 
